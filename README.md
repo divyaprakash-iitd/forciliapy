@@ -1,2 +1,2 @@
 # ffem
-Implementation of 2D FEM in Fortran
+Implementation of 2D FEM using Fortran and Python
