@@ -7,6 +7,30 @@ module calculate_forces
     
 contains
 
+! Jacobian derivative term
+function jacobianderivative(D,b) result(djdx)
+    integer, parameter :: dp = kind(0.d0)
+    real(dp), intent(in) :: D(:,:,:)
+    real(dp), intent(in) :: b(:,:,:)
+    real(dp) :: djdx(size(b,1),2,3)
+
+    integer :: k, nelem
+    real(dp) :: MD(2,2)
+
+    nelem = size(b,1)
+
+    do concurrent (k = 1:nelem)
+        ! Rearrange the elements of the deformation matrix
+        MD(1,1) = D(k,2,2)
+        MD(1,2) = -D(k,2,1)
+        MD(2,1) = -D(k,1,2)
+        MD(2,2) = D(k,1,1)
+
+        djdx(k,:,:) = matmul(MD, b)
+    end do
+
+end function jacobianderivative 
+
 ! Invariant derivative term
 function invariantderivative(D,b) result(didx)
     integer, parameter :: dp = kind(0.d0)
@@ -18,7 +42,7 @@ function invariantderivative(D,b) result(didx)
 
     nelem = size(b,1)
     
-    do k = 1, nelem
+    do concurrent (k = 1:nelem)
         didx(k,:,:) = 2 * matmul(D(k,:,:), b(k,:,:)) 
     end do
 
