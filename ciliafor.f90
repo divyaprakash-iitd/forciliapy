@@ -1,0 +1,69 @@
+module calculate_forces
+    implicit none
+    
+    private
+
+    public :: deformationgradient, jacobian
+    
+contains
+
+
+
+! subroutine deformationgradient(M,P,b,F)
+function deformationgradient(M,P,b) result(F)
+    integer, parameter :: dp = kind(0.d0)
+    integer, intent(in) :: M(:,:)
+    real(dp), intent(in) :: P(:,:)
+    real(dp), intent(in) :: b(:,:,:)
+    ! real(dp), intent(out) :: F(size(M,1),2,2)
+    real(dp) :: F(size(M,1),2,2)
+
+    integer :: i, j, nelem, idxelem, nvertex
+
+    real(dp) :: X(2,3)
+
+    nelem = size(M,1)
+    nvertex = 3
+
+    do i = 1, nelem
+        do concurrent (j = 1:nvertex)
+            idxelem = M(i,j)
+            X(:,j) = P(idxelem,:)
+        end do
+        F(i,:,:) = matmul(X, b(i,:,:))
+    end do
+    
+! end subroutine deformationgradient
+end function deformationgradient
+
+function jacobian(F) result(J)
+! subroutine jacobian(F,J)
+    implicit none
+    integer, parameter :: dp = kind(0.d0)
+    real(dp), intent(in) :: F(:,:,:)
+    real(dp)             :: J(size(F,1))
+    ! real(dp), intent(out)             :: J(size(F,1))
+
+    integer             :: k, nelem
+
+    nelem = size(F,1)
+    do k = 1, nelem
+        J(k) = determinant(F(k,:,:))
+    end do
+
+end function jacobian
+! end subroutine jacobian
+
+function determinant(M) result(D)
+    implicit none
+    integer, parameter :: dp = kind(0.d0)
+    real(dp), intent(in) :: M(:,:)
+    real(dp) :: D
+
+    D = M(1,1) * (M(2,2) * M(3,3) - M(3,2) * M(2,3)) - &
+        M(1,2) * (M(2,1) * M(3,3) - M(3,1) * M(2,3)) + &
+        M(1,3) * (M(2,1) * M(3,2) - M(2,2) * M(3,1))
+
+end function determinant
+    
+end module calculate_forces
