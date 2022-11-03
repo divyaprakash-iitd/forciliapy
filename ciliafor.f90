@@ -3,20 +3,35 @@ module calculate_forces
     
     private
 
-    public :: deformationgradient, jacobian
+    public :: deformationgradient, jacobian, invariantderivative
     
 contains
 
+! Invariant derivative term
+function invariantderivative(D,b) result(didx)
+    integer, parameter :: dp = kind(0.d0)
+    real(dp), intent(in) :: D(:,:,:)
+    real(dp), intent(in) :: b(:,:,:)
+    real(dp) :: didx(size(b,1),2,3)
 
+    integer :: k, nelem
 
-! subroutine deformationgradient(M,P,b,F)
-function deformationgradient(M,P,b) result(F)
+    nelem = size(b,1)
+    
+    do k = 1, nelem
+        didx(k,:,:) = 2 * matmul(D(k,:,:), b(k,:,:)) 
+    end do
+
+end function invariantderivative
+
+! subroutine deformationgradient(M,P,b,D)
+function deformationgradient(M,P,b) result(D)
     integer, parameter :: dp = kind(0.d0)
     integer, intent(in) :: M(:,:)
     real(dp), intent(in) :: P(:,:)
     real(dp), intent(in) :: b(:,:,:)
-    ! real(dp), intent(out) :: F(size(M,1),2,2)
-    real(dp) :: F(size(M,1),2,2)
+    ! real(dp), intent(out) :: D(size(M,1),2,2)
+    real(dp) :: D(size(M,1),2,2)
 
     integer :: i, j, nelem, idxelem, nvertex
 
@@ -30,7 +45,7 @@ function deformationgradient(M,P,b) result(F)
             idxelem = M(i,j)
             X(:,j) = P(idxelem,:)
         end do
-        F(i,:,:) = matmul(X, b(i,:,:))
+        D(i,:,:) = matmul(X, b(i,:,:))
     end do
     
 ! end subroutine deformationgradient
