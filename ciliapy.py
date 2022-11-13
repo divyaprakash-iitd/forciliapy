@@ -1,8 +1,11 @@
 from curses.textpad import rectangle
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import meshfunctions as mf
 import solvefem
+
+t1 = time.time()
 
 L = 0.2
 B = L/4
@@ -31,15 +34,33 @@ dt = 0.001
 mu = 1000
 
 # Tip force
-Ftip = 10
+Ftip = 100
 
 plt.triplot(x, y, M.simplices)
-plt.plot(x, y, 'o')
+# plt.plot(x, y, 'go')
+
+for i in range(10000):
+    FN = np.zeros((M.npoints, 2), order='F')
+    FN[top, 0] = Ftip/(Nx - 1)
+    # FN[36, 0] = Ftip/(Nx - 1)/2
+    # FN[39, 0] = Ftip/(Nx - 1)/2
+
+    solvefem.solvefem.computeforces(M.simplices + 1, np.array([x, y]).T, b, co, K, aelem, FN)
+
+    # Fix the bottom nodes (Make force zero)
+    FN[bottom, 1] = 0.0
+
+    # Calculate the deformation
+    for inode in range(M.npoints):
+        x[inode] = x[inode] + dt/mu * FN[inode, 0]
+        y[inode] = y[inode] + dt/mu * FN[inode, 1]
+
+    # Fix the bottom nodes (Make displacement zero)
+    y[bottom] = 0.0
+
+
+elasped = time.time() - t1
+plt.triplot(x, y, M.simplices)
+# plt.plot(x, y, 'go')
 plt.axis('equal')
 plt.show()
-
-FN = np.zeros((M.npoints, 2), order='F')
-for i in range(10):
-    solvefem.solvefem.computeforces(M.simplices + 1, np.array([x, y]).T, b, co, K, aelem, FN)
-    
- 
