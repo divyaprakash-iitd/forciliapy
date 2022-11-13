@@ -36,6 +36,7 @@ subroutine computeforces(M,P,b,co,Kval,aelem,FN)
 
     ! Calculate forces at each node per element 
     ! (3 nodes, 2 components of force per element)
+    F = 0.0d0
     do k = 1, nelem
         F(k,:,:) = -0.5d0 * co * aelem(k) * &
                     ( didx(k,:,:) - 2.0d0/jac(k) * djdx(k,:,:) * &
@@ -43,7 +44,6 @@ subroutine computeforces(M,P,b,co,Kval,aelem,FN)
     end do
 
     ! Adding forces for all nodes
-    FN = 0.d0
     do k = 1, nelem
         do j = 1, 3
             nidx = M(k,j)
