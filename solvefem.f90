@@ -11,7 +11,7 @@ subroutine computeforces(M,P,b,co,Kval,aelem,FN)
     real(dp), intent(in) :: b(:,:,:)
     real(dp), intent(in) :: co, kval
     real(dp), intent(in) :: aelem(size(M,1))
-    real(dp), intent(out) :: FN(size(M,1),2)
+    real(dp), intent(inout) :: FN(:,:)
 
     real(dp) :: D(size(M,1),2,2)
     real(dp) :: didx(size(M,1),2,3)
