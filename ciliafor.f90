@@ -3,7 +3,7 @@ module calculate_forces
     
     private
 
-    public :: deformationgradient, jacobian, invariantderivative
+    public :: deformationgradient, jacobian, invariantderivative, jacobianderivative
     
 contains
 
@@ -26,7 +26,7 @@ function jacobianderivative(D,b) result(djdx)
         MD(2,1) = -D(k,1,2)
         MD(2,2) = D(k,1,1)
 
-        djdx(k,:,:) = matmul(MD, b)
+        djdx(k,:,:) = matmul(MD, b(k,:,:))
     end do
 
 end function jacobianderivative 
@@ -69,7 +69,7 @@ function deformationgradient(M,P,b) result(D)
             idxelem = M(i,j)
             X(:,j) = P(idxelem,:)
         end do
-        D(i,:,:) = matmul(X, b(i,:,:))
+        D(i,:,:) = matmul(X, transpose(b(i,:,:)))
     end do
     
 ! end subroutine deformationgradient
@@ -99,9 +99,11 @@ function determinant(M) result(D)
     real(dp), intent(in) :: M(:,:)
     real(dp) :: D
 
-    D = M(1,1) * (M(2,2) * M(3,3) - M(3,2) * M(2,3)) - &
-        M(1,2) * (M(2,1) * M(3,3) - M(3,1) * M(2,3)) + &
-        M(1,3) * (M(2,1) * M(3,2) - M(2,2) * M(3,1))
+    D = M(1,1) * M(2,2) - M(1,2) * M(2,1)
+
+    ! D = M(1,1) * (M(2,2) * M(3,3) - M(3,2) * M(2,3)) - &
+    !     M(1,2) * (M(2,1) * M(3,3) - M(3,1) * M(2,3)) + &
+    !     M(1,3) * (M(2,1) * M(3,2) - M(2,2) * M(3,1))
 
 end function determinant
     
