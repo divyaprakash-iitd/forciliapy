@@ -48,21 +48,19 @@ function invariantderivative(D,b) result(didx)
 
 end function invariantderivative
 
-! subroutine deformationgradient(M,P,b,D)
 function deformationgradient(M,P,b) result(D)
     integer, parameter :: dp = kind(0.d0)
-    integer, intent(in) :: M(:,:)
-    real(dp), intent(in) :: P(:,:)
-    real(dp), intent(in) :: b(:,:,:)
-    ! real(dp), intent(out) :: D(size(M,1),2,2)
-    real(dp) :: D(size(M,1),2,2)
+    integer, intent(in) :: M(:,:)  ! Triangulation
+    real(dp), intent(in) :: P(:,:) ! Points
+    real(dp), intent(in) :: b(:,:,:) ! Shape function coefficient
+    real(dp) :: D(size(M,1),2,2) ! Deformation gradient
 
     integer :: i, j, nelem, idxelem, nvertex
 
-    real(dp) :: X(2,3)
+    real(dp) :: X(2,3) ! Coordinates matrix of nodes of a triangle
 
-    nelem = size(M,1)
-    nvertex = 3
+    nelem = size(M,1) ! No of elements 
+    nvertex = 3 ! No of nodes in an element\triangle 
 
     do i = 1, nelem
         do concurrent (j = 1:nvertex)
@@ -71,8 +69,6 @@ function deformationgradient(M,P,b) result(D)
         end do
         D(i,:,:) = matmul(X, transpose(b(i,:,:)))
     end do
-    
-! end subroutine deformationgradient
 end function deformationgradient
 
 function jacobian(F) result(J)
