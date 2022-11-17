@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import Delaunay
+from matplotlib.path import Path
 
 # Generate points for a triangle
 
@@ -81,3 +82,27 @@ def shapefunctioncoefficients(M):
     return a, b, Aelem
 
 
+def particlecor(radius, N):
+    # Generate a particle's points and boundary points
+    theta = np.linspace(0, 2*np.pi, N)
+
+    px = radius*np.cos(theta)
+    py = radius*np.sin(theta)
+    ds = np.sqrt((px[0]-px[1])**2 + (py[0]-py[1])**2)
+    boundary = np.vstack((px, py)).T
+
+    # Create a background canvas
+    x = np.arange(-radius+ds, radius, ds)
+    y = np.arange(-radius+ds, radius, ds)
+    x, y = np.meshgrid(x, y)
+    x, y = x.flatten(), y.flatten()
+    points = np.vstack((x, y)).T
+
+    p = Path(boundary)
+    grid = p.contains_points(points)
+
+    inpoints = np.vstack((x[grid], y[grid])).T
+
+    M = Delaunay(np.vstack((boundary, inpoints)))
+
+    return M, boundary
