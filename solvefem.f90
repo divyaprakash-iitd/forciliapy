@@ -1,8 +1,36 @@
+! program init_c
+!     use mod_cilia
+!     implicit none
+
+!     type(cilia), allocatable :: carray(:)
+! end program init_c
+
+
 module solvefem
-    use calculate_forces 
+    use calculate_forces
+    use mod_cilia
     implicit none
 
+    ! type(cilia), allocatable :: carray(:)
 contains
+
+subroutine create_cilia(M,P,boundary)
+    use mod_data
+    integer, parameter :: dp = kind(0.d0)
+    integer, intent(in) :: M(:,:)
+    real(dp), intent(in) :: P(:,:)
+    logical, intent(in) :: boundary(:,:)
+
+    type(cilia) :: cilium
+
+    cilium = cilia(M,P,boundary)
+    if (allocated(carray).eqv..False.) then
+        carray = [cilia ::]
+    else
+        carray = [carray, cilium]
+    end if
+
+end subroutine create_cilia
 
 subroutine computeforces(M,P,b,co,Kval,aelem,FN)
     integer, parameter :: dp = kind(0.d0)
