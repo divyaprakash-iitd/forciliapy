@@ -1,78 +1,34 @@
 module solvefem
-    use calculate_forces
-    use mod_cilia
+    use iso_fortran_env, only: int32, real64
+    use fem2d
     implicit none
 
 contains
-
-subroutine computeforces(M,P,b,co,Kval,aelem,FN)
-    integer, parameter :: dp = kind(0.d0)
-    integer, intent(in) :: M(:,:)
-    real(dp), intent(in) :: P(:,:)
-    real(dp), intent(in) :: b(:,:,:)
-    real(dp), intent(in) :: co, kval
-    real(dp), intent(in) :: aelem(size(M,1))
-    real(dp), intent(inout) :: FN(:,:)
-
-    real(dp) :: D(size(M,1),2,2)
-    real(dp) :: didx(size(M,1),2,3)
-    real(dp) :: djdx(size(M,1),2,3)
-    real(dp) :: jac(size(M,1))
-    real(dp) :: F(size(M,1),2,3)
-    integer :: j, k, nelem, nidx
-
-    nelem = size(M,1)
-
-    ! Calculate deformation gradient
-    D = deformationgradient(M,P,b)
-
-    ! Calculate the invariant derivative term
-    didx = invariantderivative(D,b)
-
-    ! Calculate the jacobian derivative term
-    djdx = jacobianderivative(D,b)
-
-    ! Calculate the jacobian
-    jac = jacobian(D)
-
-    ! Calculate forces at each node per element 
-    ! (3 nodes, 2 components of force per element)
-    F = 0.0d0
-    do k = 1, nelem
-        F(k,:,:) = -0.5d0 * co * aelem(k) * &
-                    ( didx(k,:,:) - 2.0d0/jac(k) * djdx(k,:,:) * &
-                    (1.0d0 - kval/co * log(jac(k)))) 
-    end do
-
-    ! Adding forces for all nodes
-    do k = 1, nelem
-        do j = 1, 3
-            nidx = M(k,j)
-            FN(nidx,1) = FN(nidx,1) + F(k,1,j)            
-            FN(nidx,2) = FN(nidx,2) + F(k,2,j)            
-        end do
-    end do 
-
-end subroutine computeforces
    
-subroutine solve(M,P,b,co,Kval,aelem,boundary,FN,mu,dt)
+subroutine solve(M,P,b,co,Kval,aelem,boundary,FN,niter)
+    ! TO-DO: 1. Create N festruct given nfestruct as input and store them in an array
+    !        2. Define elemental functions/subroutines so that all the calculation is
+    !           done simultaneously across all cilium in the festruct array
     integer, parameter :: dp = kind(0.d0)
     integer, intent(in) :: M(:,:)
     real(dp), intent(inout) :: P(:,:)
     real(dp), intent(in) :: b(:,:,:)
     logical, intent(in) :: boundary(:,:)
-    real(dp), intent(in) :: co, kval, mu, dt
+    real(dp), intent(in) :: co, kval
     real(dp), intent(in) :: aelem(:)
     real(dp), intent(inout) :: FN(:,:)
+    integer, intent(in) :: niter
+    
+    real(dp) :: mu, dt
+    integer :: iter, ipoints, npoints
+    real(dp) :: ftip
+    type(festruct) :: cilium
 
-    integer(int32) :: iter, niter, ipoints, npoints
-    real(real64) :: ftip
-    type(cilia) :: cilium
-
-    niter = 10000
+    mu = 1000
+    dt = 0.001
     npoints = size(P,1)
     ftip = 100.0d0
-    cilium = cilia(M,P,b,boundary,aelem,FN,co,kval)
+    cilium = festruct(M,P,b,boundary,aelem,FN,co,kval)
 
     print *, cilium%co
 
