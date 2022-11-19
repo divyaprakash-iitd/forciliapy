@@ -1,4 +1,8 @@
 module mod_cilia
+    ! TO-DO: 1. Name the module fem2d
+    !        2. Move all the required subroutines here
+    !           (Not necessarily type bound methods)
+    
     use iso_fortran_env, only: int32, real64
     use calculate_forces
     implicit none
@@ -13,12 +17,13 @@ module mod_cilia
         real(real64) :: co, kval
 
         contains
-            procedure :: calculate_forces, update_position
+            procedure :: calculate_forces
+            procedure :: update_position
 
     end type cilia
 
     contains
-
+    
     subroutine update_position(self, dt, mu)
         class(cilia), intent(inout) :: self
         real(real64), intent(in) :: dt, mu
@@ -31,8 +36,7 @@ module mod_cilia
             self%P(i,1) = self%P(i,1) + dt/mu * self%FN(i,1)
             self%P(i,2) = self%P(i,2) + dt/mu * self%FN(i,2)
         end do
-    
-        
+            
     end subroutine update_position
 
     subroutine calculate_forces(self)
@@ -77,6 +81,5 @@ module mod_cilia
         end do 
 
     end subroutine calculate_forces
-
 
 end module mod_cilia

@@ -1,36 +1,9 @@
-! program init_c
-!     use mod_cilia
-!     implicit none
-
-!     type(cilia), allocatable :: carray(:)
-! end program init_c
-
-
 module solvefem
     use calculate_forces
     use mod_cilia
     implicit none
 
-    ! type(cilia), allocatable :: carray(:)
 contains
-
-subroutine create_cilia(M,P,boundary)
-    use mod_data
-    integer, parameter :: dp = kind(0.d0)
-    integer, intent(in) :: M(:,:)
-    real(dp), intent(in) :: P(:,:)
-    logical, intent(in) :: boundary(:,:)
-
-    type(cilia) :: cilium
-
-    cilium = cilia(M,P,boundary)
-    if (allocated(carray).eqv..False.) then
-        carray = [cilia ::]
-    else
-        carray = [carray, cilium]
-    end if
-
-end subroutine create_cilia
 
 subroutine computeforces(M,P,b,co,Kval,aelem,FN)
     integer, parameter :: dp = kind(0.d0)
@@ -81,5 +54,54 @@ subroutine computeforces(M,P,b,co,Kval,aelem,FN)
     end do 
 
 end subroutine computeforces
-    
+   
+subroutine solve(M,P,b,co,Kval,aelem,boundary,FN,mu,dt)
+    integer, parameter :: dp = kind(0.d0)
+    integer, intent(in) :: M(:,:)
+    real(dp), intent(inout) :: P(:,:)
+    real(dp), intent(in) :: b(:,:,:)
+    logical, intent(in) :: boundary(:,:)
+    real(dp), intent(in) :: co, kval, mu, dt
+    real(dp), intent(in) :: aelem(:)
+    real(dp), intent(inout) :: FN(:,:)
+
+    integer(int32) :: iter, niter, ipoints, npoints
+    real(real64) :: ftip
+    type(cilia) :: cilium
+
+    niter = 10000
+    npoints = size(P,1)
+    ftip = 100.0d0
+    cilium = cilia(M,P,b,boundary,aelem,FN,co,kval)
+
+    print *, cilium%co
+
+    do iter = 1, niter
+        cilium%FN = 0.0d0
+        ! forall (ipoints = 1:npoints, boundary(ipoints,1).eqv..True.) &
+            ! FN(ipoints,1) = ftip
+        where (boundary(:,1).eqv..True.)
+            cilium%FN(:,1) = ftip/3.0d0
+        end where
+       
+
+        call cilium%calculate_forces()
+
+        ! Fix the bottom nodes (Make force zero)
+        forall (ipoints = 1:npoints, boundary(ipoints,2).eqv..True.) &
+            cilium%FN(ipoints,2) = 0.0d0
+
+        call cilium%update_position(dt,mu)
+
+        ! Fix the bottom nodes (Make displacement zero)
+        forall (ipoints = 1:npoints, boundary(ipoints,2).eqv..True.) &
+            cilium%P(ipoints,2) = 0.0d0
+
+    end do
+
+    FN = cilium%FN
+    P = cilium%P
+
+end subroutine solve
+
 end module solvefem
