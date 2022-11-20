@@ -30,8 +30,6 @@ subroutine solve(M,P,b,co,Kval,aelem,boundary,FN,niter)
     ftip = 100.0d0
     cilium = festruct(M,P,b,boundary,aelem,FN,co,kval)
 
-    print *, cilium%co
-
     do iter = 1, niter
         cilium%FN = 0.0d0
         ! forall (ipoints = 1:npoints, boundary(ipoints,1).eqv..True.) &
