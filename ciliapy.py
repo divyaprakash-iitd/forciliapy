@@ -28,7 +28,6 @@ K = 10000
 
 
 # Run time iterations
-niter = 10000
 dt = 0.001
 mu = 1000
 
@@ -36,30 +35,17 @@ mu = 1000
 Ftip = 100
 
 plt.triplot(x, y, M.simplices)
-# plt.plot(x, y, 'go')
+boundary = np.vstack((top, bottom)).T
+FN = np.zeros((M.npoints, 2), order='F')
+P = np.zeros((M.npoints, 2), order='F')
+P[:, 0] = x
+P[:, 1] = y
 
-for i in range(10000):
-    FN = np.zeros((M.npoints, 2), order='F')
-    FN[top, 0] = Ftip/(Nx - 1)
-    # FN[36, 0] = Ftip/(Nx - 1)/2
-    # FN[39, 0] = Ftip/(Nx - 1)/2
-
-    solvefem.solvefem.computeforces(M.simplices + 1, np.array([x, y]).T, b, co, K, aelem, FN)
-
-    # Fix the bottom nodes (Make force zero)
-    FN[bottom, 1] = 0.0
-
-    # Calculate the deformation
-    for inode in range(M.npoints):
-        x[inode] = x[inode] + dt/mu * FN[inode, 0]
-        y[inode] = y[inode] + dt/mu * FN[inode, 1]
-
-    # Fix the bottom nodes (Make displacement zero)
-    y[bottom] = 0.0
-
+for niter in range(1, 10000, 2000):
+    solvefem.solvefem.solve(M.simplices + 1, P, b, co, K, aelem,
+                            boundary, FN, niter)
+    plt.triplot(P[:, 0], P[:, 1], M.simplices)
 
 elasped = time.time() - t1
-plt.triplot(x, y, M.simplices)
-# plt.plot(x, y, 'go')
 plt.axis('equal')
 plt.show()
