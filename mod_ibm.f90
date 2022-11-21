@@ -126,9 +126,7 @@ contains
         ! Calculate the u velocity of Lagrangian points
         ! Iterating over all the grid points including the boundary values for u-velocity cells
         do inp = 1,np
-            ! Lx = B%boundary(inp)%x
             Lx = B*P(inp,1)
-            Ly = B%boundary(inp)%y
             Ly = B*P(inp,2)
         
             ! Make sure that the following indices lie inside the domain            
@@ -143,7 +141,7 @@ contains
                     Ex = M%u_mesh(i,j)%x ! u-cell x location
                     Ey = M%u_mesh(i,j)%y ! u-cell y location
                     UE = u(i,j)
-                    B%boundary(inp)%Ux = B%boundary(inp)%Ux + UE * dirac( [(Ex-Lx), (Ey-Ly)], M%dx) * M%dx**2
+                    B%U(inp,1) = B%U(inp,1) + UE * dirac( [(Ex-Lx), (Ey-Ly)], M%dx) * M%dx**2
                 end do
             end do
         end do
@@ -152,8 +150,8 @@ contains
         ! Iterating over all the grid points including the boundary values for v-velocity cells
         
         do inp = 1,np
-            Lx = B%boundary(inp)%x
-            Ly = B%boundary(inp)%y
+            Lx = B%P(inp,1)
+            Ly = B%P(inp,2)
        
             LeftIndex   = 1 + M%xv%lb + floor((Lx-StencilSize*M%dx)/M%dx) ! Increment by 1 since the first value is negative and not zero 
             BottomIndex = 0 + M%yv%lb + floor((Ly-StencilSize*M%dy)/M%dy)
@@ -166,7 +164,7 @@ contains
                     Ex = M%v_mesh(i,j)%x ! v-cell x location
                     Ey = M%v_mesh(i,j)%y ! v-cell y location
                     VE = v(i,j)
-                    B%boundary(inp)%Uy = B%boundary(inp)%Uy + VE * dirac( [(Ex-Lx), (Ey-Ly)], M%dy) * M%dy**2
+                    B%U(inp,2) = B%P(inp,2) + VE * dirac( [(Ex-Lx), (Ey-Ly)], M%dy) * M%dy**2
                 end do
             end do
         end do
