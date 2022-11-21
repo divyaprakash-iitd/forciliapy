@@ -18,17 +18,19 @@ subroutine solve(M,P,b,co,Kval,aelem,boundary,FN,niter)
     real(dp), intent(in) :: aelem(:)
     real(dp), intent(inout) :: FN(:,:)
     integer, intent(in) :: niter
-    
+   
+    real(dp) :: U(size(FN,1),size(FN,2))
     real(dp) :: mu, dt
     integer :: iter, ipoints, npoints
     real(dp) :: ftip
     type(festruct) :: cilium
 
+    U = 0.0d0
     mu = 1000
     dt = 0.001
     npoints = size(P,1)
     ftip = 100.0d0
-    cilium = festruct(M,P,b,boundary,aelem,FN,co,kval)
+    cilium = festruct(M,P,b,boundary,aelem,FN,U,co,kval)
 
     do iter = 1, niter
         cilium%FN = 0.0d0
