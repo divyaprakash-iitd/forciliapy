@@ -1,0 +1,23 @@
+!***********************************
+!*** Time related parameters
+!***********************************
+&time
+dt      = 0.0001,       ! Time step    
+it_save = 500,         ! Number of time steps between saving fields
+tsim    = 100/
+!***********************************
+!***  Parameters related to grid and computational domain
+!***********************************
+&grid
+Lx  = 0.01,         ! Size of box in x direction 
+Ly  = 0.002,         ! Size of box in y direction
+Nx  = 500,         ! Number of points in x direction
+Ny  = 100/         ! Number of points in y direction
+!***********************************
+!*** Parameters related to flow
+!***********************************
+&flow
+nu      = 0.000001,     ! Kinematic viscosity
+rho     = 1000,        ! Density
+utop    = 0.0056,      ! Oscillation amplitude
+tp      = 10/
