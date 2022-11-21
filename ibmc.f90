@@ -1,11 +1,10 @@
-subroutine ibmc(M,P,b,boundary,co,kval,aelem,FN)
-    use iso_fortran_env,    only: int32, real64
+subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
     use mod_pressure,       only: generate_laplacian_sparse, calculate_pressure_sparse
     ! use mod_amgx,           only: calculate_pressure_amgx
     use mod_mesh
     use mod_time
-    use mod_time_stepping
-    use mod_boundary
+    ! use mod_time_stepping
+    ! use mod_boundary
     use mod_io
     use mod_ibm
     use mod_vec
@@ -13,8 +12,8 @@ subroutine ibmc(M,P,b,boundary,co,kval,aelem,FN)
     implicit none
 
     integer, parameter :: dp = kind(0.d0)
-    integer, intent(in) :: M(:,:)
-    real(dp), intent(inout) :: P(:,:)
+    integer, intent(in) :: MM(:,:)
+    real(dp), intent(inout) :: PP(:,:)
     real(dp), intent(in) :: b(:,:,:)
     logical, intent(in) :: boundary(:,:)
     real(dp), intent(in) :: co, kval
@@ -22,30 +21,30 @@ subroutine ibmc(M,P,b,boundary,co,kval,aelem,FN)
     real(dp), intent(inout) :: FN(:,:)
 
     ! Parameters
-    integer(int32), parameter :: PI = 3.141592653589793
+    integer, parameter :: PI = 3.141592653589793
     ! Computational Domain
-    real(real64)    :: Lx
-    real(real64)    :: Ly
+    real(dp)    :: Lx
+    real(dp)    :: Ly
     ! Mesh Paramaters
-    integer(int32)  :: Nx
-    integer(int32)  :: Ny
+    integer  :: Nx
+    integer  :: Ny
     ! Simulation time Paramaters
-    real(real64)    :: tsim
-    real(real64)    :: dt  
-    real(real64)    :: t
-    integer(int32)  :: it_save
+    real(dp)    :: tsim
+    real(dp)    :: dt  
+    real(dp)    :: t
+    integer  :: it_save
     ! Physical Constants
-    real(real64)    :: nu 
-    real(real64)    :: rho   
+    real(dp)    :: nu 
+    real(dp)    :: rho   
     ! Boundary values
-    real(real64)    :: utop, vtop, ubottom, vbottom, &
-                       uleft, vleft, uright, vright
+    real(dp)    :: utop, vtop, ubottom, vbottom, &
+                       uleft, vleft, uright, vright, ulid
     ! Matrices to store fields
-    real(real64), allocatable :: u(:,:), v(:,:), us(:,:), vs(:,:), R(:,:), &
-                                 P(:,:), A(:,:,:), Fx(:,:), Fy(:,:)
+    real(dp), allocatable :: u(:,:), v(:,:), us(:,:), vs(:,:), R(:,:), &
+                                 P(:,:), A(:,:,:), Fx(:,:), Fy(:,:), umid(:,:), vmid(:,:)
     ! Temporary/Miscellaneous variable
-    integer(int32)  :: it, NN, il, ip, err
-    real(real64)    :: tp  ! Time period
+    integer  :: it, NN, il, ip, err
+    real(dp)    :: tp  ! Time period
     ! Mesh
     type(mesh)      :: M
 
@@ -72,6 +71,8 @@ subroutine ibmc(M,P,b,boundary,co,kval,aelem,FN)
     ! Allocate matrices ofr u,v,us,vs,rhs
     allocate(u(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub))    
     allocate(v(M%xv%lb:M%xv%ub,M%yv%lb:M%yv%ub))
+    allocate(umid(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub))    
+    allocate(vmid(M%xv%lb:M%xv%ub,M%yv%lb:M%yv%ub))
     allocate(us(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub))    
     allocate(vs(M%xv%lb:M%xv%ub,M%yv%lb:M%yv%ub))
     allocate(R(M%xp%lb:M%xp%ub,M%yp%lb:M%yp%ub))
@@ -116,7 +117,7 @@ subroutine ibmc(M,P,b,boundary,co,kval,aelem,FN)
     ! Define an festruct object before
     ! Initialize the festruct
 
-    cilium = festruct(M,P,b,boundary,aelem,FN,co,kval)
+    cilium = festruct(MM,PP,b,boundary,aelem,FN,co,kval)
 
     call apply_parabolic_initialization(M,u,uleft)
 

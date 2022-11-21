@@ -57,7 +57,7 @@ contains
         do inp = 1,np
             Lx = B%P(inp,1)
             Ly = B%P(inp,2)
-            Fly = B%F(inp,2)
+            Fly = B%FN(inp,2)
 
             LeftIndex   = 1 + M%xv%lb + floor((Lx-StencilSize*M%dx)/M%dx) ! Increment by 1 since the first value is negative and not zero 
             BottomIndex = 0 + M%yv%lb + floor((Ly-StencilSize*M%dy)/M%dy)
@@ -107,7 +107,7 @@ contains
     subroutine interpolate_velocity(M,B,u,v)
         class(mesh), intent(in) :: M
         ! class(ib), intent(in out) :: B
-        class(festruct), intent(in) :: B
+        class(festruct), intent(inout) :: B
         real(real64), intent(in) :: u(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub), v(M%xv%lb:M%xv%ub,M%yv%lb:M%yv%ub)
 
         ! Define variables to store locations
@@ -126,8 +126,8 @@ contains
         ! Calculate the u velocity of Lagrangian points
         ! Iterating over all the grid points including the boundary values for u-velocity cells
         do inp = 1,np
-            Lx = B*P(inp,1)
-            Ly = B*P(inp,2)
+            Lx = B%P(inp,1)
+            Ly = B%P(inp,2)
         
             ! Make sure that the following indices lie inside the domain            
             LeftIndex   = 0 + M%xu%lb + floor((Lx-StencilSize*M%dx)/M%dx) 
@@ -197,4 +197,6 @@ contains
         end function dirac
 
     end subroutine interpolate_velocity
+
+    end module mod_ibm
 

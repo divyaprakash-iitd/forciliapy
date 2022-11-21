@@ -15,7 +15,8 @@ module fem2d
         real(real64), allocatable :: aelem(:)
         real(real64), allocatable :: FN(:,:)
         real(real64), allocatable :: U(:,:)
-        real(real64) :: co, kval
+        real(real64) :: co
+        real(real64) :: kval = 10.0d0
 
         contains
             procedure :: calculate_forces
