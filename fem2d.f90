@@ -14,6 +14,7 @@ module fem2d
         logical, allocatable :: boundary(:,:) ! Top, bottom, left and right boundaries
         real(real64), allocatable :: aelem(:)
         real(real64), allocatable :: FN(:,:)
+        real(real64), allocatable :: U(:,:)
         real(real64) :: co, kval
 
         contains
@@ -57,6 +58,7 @@ module fem2d
         end do
 
         ! Adding forces for all nodes
+        self%FN = 0.0d0
         do k = 1, nelem
             do j = 1, 3
                 nidx = self%M(k,j)
@@ -67,17 +69,17 @@ module fem2d
 
     end subroutine calculate_forces
     
-    subroutine update_position(self, dt, mu)
+    subroutine update_position(self, dt)
         class(festruct), intent(inout) :: self
-        real(real64), intent(in) :: dt, mu
+        real(real64), intent(in) :: dt
 
         integer(int32) :: i, npoints
 
         npoints = size(self%P,1)
 
         do i = 1,size(self%P,1)
-            self%P(i,1) = self%P(i,1) + dt/mu * self%FN(i,1)
-            self%P(i,2) = self%P(i,2) + dt/mu * self%FN(i,2)
+            self%P(i,1) = self%P(i,1) + dt * self%U(i,1)
+            self%P(i,2) = self%P(i,2) + dt * self%U(i,2)
         end do
             
     end subroutine update_position
