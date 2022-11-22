@@ -1,12 +1,24 @@
 module mod_mesh
     use iso_fortran_env, only: int32, real64, int32, real64
-    use mod_vec
-    use mod_dims
     
     implicit none
 
     private
-    public :: mesh
+    public :: mesh, dims, vec
+    
+    type :: dims
+        character(len=5) :: name
+        integer(int32) :: lb, ub
+    end type dims
+    
+    type :: vec
+        real(real64) :: x
+        real(real64) :: y 
+    end type 
+
+    interface vec
+        module procedure :: vec_constructor
+    end interface vec
 
     type :: mesh
         character(len=:), allocatable :: name
@@ -21,6 +33,11 @@ module mod_mesh
     end interface mesh
 
 contains
+    
+    pure type(vec) function vec_constructor() result(self)
+        self%x = 0.0d0
+        self%y = 0.0d0
+    end function
 
     pure type(mesh) function mesh_constructor(name,Lx,Ly,Nx,Ny) result(self)
             character(len=*), intent(in) :: name

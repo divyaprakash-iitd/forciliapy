@@ -1,50 +1,52 @@
-subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
+subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
+    ! ibmc.ibmc(M.simplices + 1, P, b, boundary, co, K, aelem, FN, UN)
     use mod_pressure,       only: generate_laplacian_sparse, calculate_pressure_sparse
     ! use mod_amgx,           only: calculate_pressure_amgx
     use mod_mesh
     use mod_time
     ! use mod_time_stepping
-    ! use mod_boundary
+    use mod_boundary
     use mod_io
     use mod_ibm
-    use mod_vec
     use fem2d
     implicit none
 
-    integer, parameter :: dp = kind(0.d0)
+    ! integer, parameter :: dp = selected_real_kind(15)
+    ! integer, parameter :: dp = kind(0.d0)
     integer, intent(in) :: MM(:,:)
-    real(dp), intent(inout) :: PP(:,:)
-    real(dp), intent(in) :: b(:,:,:)
+    real(8), intent(inout) :: PP(:,:)
+    real(8), intent(in) :: b(:,:,:)
     logical, intent(in) :: boundary(:,:)
-    real(dp), intent(in) :: co, kval
-    real(dp), intent(in) :: aelem(:)
-    real(dp), intent(inout) :: FN(:,:)
+    real(8), intent(in) :: co, kval
+    real(8), intent(in) :: aelem(:)
+    real(8), intent(inout) :: FN(:,:)
+    real(8), intent(inout) :: UN(:,:)
 
     ! Parameters
-    integer, parameter :: PI = 3.141592653589793
+    real(8), parameter :: PI = 3.141592653589793
     ! Computational Domain
-    real(dp)    :: Lx
-    real(dp)    :: Ly
+    real(8)    :: Lx
+    real(8)    :: Ly
     ! Mesh Paramaters
     integer  :: Nx
     integer  :: Ny
     ! Simulation time Paramaters
-    real(dp)    :: tsim
-    real(dp)    :: dt  
-    real(dp)    :: t
+    real(8)    :: tsim
+    real(8)    :: dt  
+    real(8)    :: t
     integer  :: it_save
     ! Physical Constants
-    real(dp)    :: nu 
-    real(dp)    :: rho   
+    real(8)    :: nu 
+    real(8)    :: rho   
     ! Boundary values
-    real(dp)    :: utop, vtop, ubottom, vbottom, &
+    real(8)    :: utop, vtop, ubottom, vbottom, &
                        uleft, vleft, uright, vright, ulid
     ! Matrices to store fields
-    real(dp), allocatable :: u(:,:), v(:,:), us(:,:), vs(:,:), R(:,:), &
+    real(8), allocatable :: u(:,:), v(:,:), us(:,:), vs(:,:), R(:,:), &
                                  P(:,:), A(:,:,:), Fx(:,:), Fy(:,:), umid(:,:), vmid(:,:)
     ! Temporary/Miscellaneous variable
     integer  :: it, NN, il, ip, err
-    real(dp)    :: tp  ! Time period
+    real(8)    :: tp  ! Time period
     ! Mesh
     type(mesh)      :: M
 
@@ -117,7 +119,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
     ! Define an festruct object before
     ! Initialize the festruct
 
-    cilium = festruct(MM,PP,b,boundary,aelem,FN,co,kval)
+    cilium = festruct(MM,PP,b,boundary,aelem,FN,UN,co,kval)
 
     call apply_parabolic_initialization(M,u,uleft)
 
@@ -135,8 +137,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         utop = 2*3.1415/tp*ulid*cos(2*3.1415*t/tp)
         t = t + dt
         it = it + 1
-        
-
+      
         ! RK2: Step 1
         ! Apply velocity boundary conditions
         call apply_boundary_channel(M,u,v,utop,ubottom,uleft,uright,vtop,vbottom,vleft,vright)
@@ -145,6 +146,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         Fx = 0.0d0 ! Initialize the forces at every time-step
         Fy = 0.0d0
         call spread_force(M,cilium,Fx,Fy)
+
 
         call cdu(M,u,v,us,nu,Fx)
         us = u + us*dt/2
@@ -164,18 +166,25 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         ! Perform the corrector step to obtain the velocity
         call corrector(M,umid,vmid,us,vs,P,rho,0.5d0*dt)
 
-        ! Interpolate velocity
+        ! Initialize velocity to zero and then Interpolate velocity
+        cilium%U = 0.0d0
         call interpolate_velocity(M,cilium,umid,vmid)
 
         ! Update structure
         call cilium%update_position(dt/2)
+        
+        ! call write_field(u,'u',it) 
+        ! call write_field(v,'v',it) 
+        ! call write_field(real(MM,8),'F',it) 
+        ! call write_field(cilium%P,'P',it) 
 
         ! RK2: Step 2
        
         ! Calculate forces
         call cilium%calculate_forces()
         call apply_boundary_channel(M,umid,vmid,utop,ubottom,uleft,uright,vtop,vbottom,vleft,vright)
-        
+       
+        ! print *, "Hi"
         Fx = 0.0d0 ! Initialize the forces at every time-step
         Fy = 0.0d0
         call spread_force(M,cilium,Fx,Fy)
@@ -185,6 +194,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         call cdv(M,umid,vmid,vs,nu,Fy)
         vs = v + vs*dt
         
+
         ! Apply velocity boundary conditions to us and vs
         call apply_boundary_channel(M,us,vs,utop,ubottom,uleft,uright,vtop,vbottom,vleft,vright)
 
@@ -198,7 +208,8 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         ! Perform the corrector step to obtain the velocity
         call corrector(M,u,v,us,vs,p,rho,dt)
     
-        ! Interpolate velocity
+        ! Initialize velocity to zero and then Interpolate velocity
+        cilium%U = 0.0d0
         call interpolate_velocity(M,cilium,u,v)
 
         ! Update structure
@@ -208,10 +219,14 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN)
         
         ! Write files every Nth timestep
         if (mod(it,it_save).eq.0) then 
+        ! if (mod(it,1).eq.0) then 
             call write_field(u,'u',it) 
             call write_field(v,'v',it) 
+            call write_field(real(MM,8),'F',it) 
+            call write_field(cilium%P,'P',it) 
         end if
 
     end do
-
+    FN = cilium%FN
+    PP = cilium%P
 end subroutine ibmc

@@ -33,7 +33,7 @@ module fem2d
         real(real64) :: djdx(size(self%M,1),2,3)
         real(real64) :: jac(size(self%M,1))
         real(real64) :: F(size(self%M,1),2,3)
-        integer :: j, k, nelem, nidx
+        integer :: j, k, nelem, nidx, ipoints
 
         nelem = size(self%M,1)
 
@@ -67,6 +67,10 @@ module fem2d
                self%FN(nidx,2) = self%FN(nidx,2) + F(k,2,j)            
             end do
         end do 
+        
+        ! Fix the bottom nodes (Make force zero)
+        forall (ipoints = 1:size(self%P,1), self%boundary(ipoints,2).eqv..True.) &
+            self%FN(ipoints,:) = 0.0d0
 
     end subroutine calculate_forces
     
@@ -74,15 +78,16 @@ module fem2d
         class(festruct), intent(inout) :: self
         real(real64), intent(in) :: dt
 
-        integer(int32) :: i, npoints
+        integer(int32) :: ipoint, npoints
 
         npoints = size(self%P,1)
 
-        do i = 1,size(self%P,1)
-            self%P(i,1) = self%P(i,1) + dt * self%U(i,1)
-            self%P(i,2) = self%P(i,2) + dt * self%U(i,2)
+        do ipoint = 1,npoints
+            self%P(ipoint,1) = self%P(ipoint,1) + dt * self%U(ipoint,1)
+            self%P(ipoint,2) = self%P(ipoint,2) + dt * self%U(ipoint,2)
         end do
             
+
     end subroutine update_position
 
     ! Helper functions

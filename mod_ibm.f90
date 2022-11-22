@@ -13,7 +13,6 @@ contains
    
     subroutine spread_force(M,B,Fx,Fy)
         class(mesh), intent(in) :: M
-        ! class(ib), intent(in) :: B
         class(festruct), intent(in) :: B
         real(real64), intent(in out) :: Fx(:,:), Fy(:,:)
 
@@ -23,10 +22,13 @@ contains
         real(real64) :: Flx, Fly    ! Forces at Lagrangian locations
         integer(int32) :: np ! Number of Lagrangian particles
 
+        ! real(real64), intent(in) :: u(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub), v(M%xv%lb:M%xv%ub,M%yv%lb:M%yv%ub)
+
         ! Indices
         integer(int32) :: i, j, inp, LeftIndex, RightIndex, BottomIndex, TopIndex, StencilSize
 
         np = size(B%P,1)
+        print *, np
         StencilSize = 4; ! Only on one side
 
         ! Calculate the x-direction force on the u-velocity cells
@@ -43,12 +45,19 @@ contains
             RightIndex  = LeftIndex     +   2*StencilSize
             TopIndex    = BottomIndex   +   2*StencilSize
 
+            ! print *, 'Left index = ', LeftIndex
+            ! print *, 'Right index = ', RightIndex
+            ! print *, 'Top index = ', TopIndex
+            ! print *, 'Bottom index = ', BottomIndex
+
             do j = BottomIndex,TopIndex
                 do i = LeftIndex,RightIndex
                     Ex = M%u_mesh(i,j)%x
                     Ey = M%u_mesh(i,j)%y
                     
                     Fx(i,j) = Fx(i,j) + Flx * dirac( [(Ex-Lx), (Ey-Ly)], M%dx)
+                    ! print *, dirac( [(Ex-Lx), (Ey-Ly)], M%dx)
+                    ! print *, Ey
                 end do
             end do
         end do
@@ -75,9 +84,11 @@ contains
             end do
         end do
 
+        ! print *, sum(Fx)*M%dx**2, sum(B%FN(:,1))
+        ! print *, sum(Fy)*M%dx**2, sum(B%FN(:,2))
         contains
 
-        pure function dirac(x,h)
+        function dirac(x,h)
             ! Defined for a uniform grid
             real(real64), intent(in) :: x(2)
             real(real64), intent(in) :: h
@@ -90,17 +101,20 @@ contains
             do ii = 1,2
                 r = x(ii)/h 
                 if (abs(r).le.2) then
-                    phi = 0.25d0 * (1 + cos(PI*r/2))
+                    phi = 0.25d0 * (1 + cos(PI*r/2.0d0))
                 else 
                     phi = 0.0d0
                 end if
             
                 dirac = dirac*phi
+                ! print *, dirac
             end do        
 
-            dirac = (1/h**2) * dirac
+            dirac = (1.0d0/h**2) * dirac
 
         end function dirac
+
+
 
     end subroutine spread_force
 
@@ -142,6 +156,7 @@ contains
                     Ey = M%u_mesh(i,j)%y ! u-cell y location
                     UE = u(i,j)
                     B%U(inp,1) = B%U(inp,1) + UE * dirac( [(Ex-Lx), (Ey-Ly)], M%dx) * M%dx**2
+                    ! print *, dirac( [(Ex-Lx), (Ey-Ly)], M%dx)
                 end do
             end do
         end do
@@ -164,10 +179,14 @@ contains
                     Ex = M%v_mesh(i,j)%x ! v-cell x location
                     Ey = M%v_mesh(i,j)%y ! v-cell y location
                     VE = v(i,j)
-                    B%U(inp,2) = B%P(inp,2) + VE * dirac( [(Ex-Lx), (Ey-Ly)], M%dy) * M%dy**2
+                    B%U(inp,2) = B%U(inp,2) + VE * dirac( [(Ex-Lx), (Ey-Ly)], M%dy) * M%dy**2
                 end do
             end do
         end do
+        
+        ! Fix the bottom nodes (Make displacement zero)
+        forall (inp = 1:np, B%boundary(inp,2).eqv..True.) &
+            B%U(inp,:) = 0.0d0
 
         contains 
 

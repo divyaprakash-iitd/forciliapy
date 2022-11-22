@@ -17,8 +17,8 @@ def rectanglecor(L, B, Nx, Ny):
     Returns:
         Delaunay object: The Delaunay triangulation object
     """
-    X = np.linspace(0, B, Nx)
-    Y = np.linspace(0, L, Ny)
+    X = np.linspace(0.5e-3, 1.5e-3, Nx)
+    Y = np.linspace(0.3e-3, 1.5e-3, Ny)
     X, Y = np.meshgrid(X, Y)
 
     X = X.reshape((X.size, -1))
