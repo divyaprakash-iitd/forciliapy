@@ -55,7 +55,9 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     namelist /grid/ Nx, Ny, Lx, Ly
     namelist /flow/ nu, rho, utop, TP
     
-    type(festruct) :: cilium
+    integer :: ncilia = 2
+    integer :: icilia
+    type(festruct) :: cilium(2)
 
     !---------------------- Begin Calculations ------------------------------------!
 
@@ -145,7 +147,9 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         call cilium%calculate_forces()
         Fx = 0.0d0 ! Initialize the forces at every time-step
         Fy = 0.0d0
-        call spread_force(M,cilium,Fx,Fy)
+        do icilia = 1,ncilia
+            call spread_force(M,cilium(icilia),Fx,Fy)
+        end do
 
 
         call cdu(M,u,v,us,nu,Fx)
@@ -167,8 +171,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         call corrector(M,umid,vmid,us,vs,P,rho,0.5d0*dt)
 
         ! Initialize velocity to zero and then Interpolate velocity
-        cilium%U = 0.0d0
-        call interpolate_velocity(M,cilium,umid,vmid)
+        call cilium%set_velocity(0.0d0)
+        do icilia = 1,ncilia
+            call interpolate_velocity(M,cilium(icilia),umid,vmid)
+        end do
 
         ! Update structure
         call cilium%update_position(dt/2)
@@ -187,7 +193,9 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         ! print *, "Hi"
         Fx = 0.0d0 ! Initialize the forces at every time-step
         Fy = 0.0d0
-        call spread_force(M,cilium,Fx,Fy)
+        do icilia = 1,ncilia
+            call spread_force(M,cilium(icilia),Fx,Fy)
+        end do
 
         call cdu(M,umid,vmid,us,nu,Fx)
         us = u + us*dt
@@ -209,8 +217,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         call corrector(M,u,v,us,vs,p,rho,dt)
     
         ! Initialize velocity to zero and then Interpolate velocity
-        cilium%U = 0.0d0
-        call interpolate_velocity(M,cilium,u,v)
+        call cilium%set_velocity(0.0d0)
+        do icilia = 1,ncilia
+            call interpolate_velocity(M,cilium(icilia),u,v)
+        end do
 
         ! Update structure
         call cilium%update_position(dt)
@@ -223,10 +233,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
             call write_field(u,'u',it) 
             call write_field(v,'v',it) 
             call write_field(real(MM,8),'F',it) 
-            call write_field(cilium%P,'P',it) 
+            call write_field(cilium(1)%P,'P',it) 
         end if
 
     end do
-    FN = cilium%FN
-    PP = cilium%P
+    FN = cilium(1)%FN
+    PP = cilium(1)%P
 end subroutine ibmc

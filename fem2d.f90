@@ -21,12 +21,26 @@ module fem2d
         contains
             procedure :: calculate_forces
             procedure :: update_position
+            procedure :: set_force
+            procedure :: set_velocity
 
     end type festruct
 
     contains
+
+    elemental subroutine set_force(self,FN)
+        class(festruct), intent(inout) :: self
+        real(real64), intent(in) :: FN
+        self%FN = FN 
+    end subroutine set_force
     
-    subroutine calculate_forces(self)
+    elemental subroutine set_velocity(self,UN)
+        class(festruct), intent(inout) :: self
+        real(real64), intent(in) :: UN
+        self%U = UN 
+    end subroutine set_velocity
+
+    elemental subroutine calculate_forces(self)
         class(festruct), intent(inout) :: self
         real(real64) :: D(size(self%M,1),2,2)
         real(real64) :: didx(size(self%M,1),2,3)
@@ -74,7 +88,7 @@ module fem2d
 
     end subroutine calculate_forces
     
-    subroutine update_position(self, dt)
+    elemental subroutine update_position(self, dt)
         class(festruct), intent(inout) :: self
         real(real64), intent(in) :: dt
 
@@ -92,7 +106,7 @@ module fem2d
 
     ! Helper functions
     ! Jacobian derivative term
-    function jacobianderivative(D,b) result(djdx)
+    pure function jacobianderivative(D,b) result(djdx)
         integer, parameter :: dp = kind(0.d0)
         real(dp), intent(in) :: D(:,:,:)
         real(dp), intent(in) :: b(:,:,:)
@@ -116,7 +130,7 @@ module fem2d
     end function jacobianderivative 
 
     ! Invariant derivative term
-    function invariantderivative(D,b) result(didx)
+    pure function invariantderivative(D,b) result(didx)
         integer, parameter :: dp = kind(0.d0)
         real(dp), intent(in) :: D(:,:,:)
         real(dp), intent(in) :: b(:,:,:)
@@ -132,7 +146,7 @@ module fem2d
 
     end function invariantderivative
 
-    function deformationgradient(M,P,b) result(D)
+    pure function deformationgradient(M,P,b) result(D)
         integer, parameter :: dp = kind(0.d0)
         integer, intent(in) :: M(:,:)  ! Triangulation
         real(dp), intent(in) :: P(:,:) ! Points
@@ -155,7 +169,7 @@ module fem2d
         end do
     end function deformationgradient
 
-    function jacobian(F) result(J)
+    pure function jacobian(F) result(J)
     ! subroutine jacobian(F,J)
         implicit none
         integer, parameter :: dp = kind(0.d0)
@@ -173,7 +187,7 @@ module fem2d
     end function jacobian
     ! end subroutine jacobian
 
-    function determinant(M) result(D)
+    pure function determinant(M) result(D)
         implicit none
         integer, parameter :: dp = kind(0.d0)
         real(dp), intent(in) :: M(:,:)
