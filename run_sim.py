@@ -7,8 +7,8 @@ import ibmc
 
 DL = 0.01
 DH = 0.002
-L = 1e-3
-B = 0.5e-3
+L = 0.7e-3
+B = 0.1e-3
 Nx = 4
 Ny = 10
 
@@ -39,4 +39,17 @@ P[:, 1] = y
 
 # plt.triplot(x,y,M.simplices)
 
-ibmc.ibmc(M.simplices + 1, P, b, boundary, co, K, aelem, FN, UN)
+# Generate a particle
+MP, _ = mf.particlecor(L/4.0, 12)
+x = MP.points[:, 0]
+y = MP.points[:, 1]
+PP = np.zeros((MP.npoints, 2), order='F')
+PP[:, 0] = x
+PP[:, 1] = y
+boundary[:, :] = False
+_, pb, paelem = mf.shapefunctioncoefficients(MP)
+
+# subroutine ibmc(MM,PTM,PP,PTP,b,PTB,boundary,co,kval,aelem,ptaelem,FN,UN)
+# ibmc.ibmc(M.simplices + 1, P, b, boundary, co, K, aelem, FN, UN)
+ibmc.ibmc(M.simplices + 1, MP.simplices + 1, P, PP, b, pb, boundary, co, K,
+          aelem, paelem, FN, UN)

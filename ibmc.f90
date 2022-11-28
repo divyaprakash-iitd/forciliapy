@@ -1,4 +1,4 @@
-subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
+subroutine ibmc(MM,PTM,PP,PTP,b,PTB,boundary,co,kval,aelem,ptaelem,FN,UN)
     ! ibmc.ibmc(M.simplices + 1, P, b, boundary, co, K, aelem, FN, UN)
     use mod_pressure,       only: generate_laplacian_sparse, calculate_pressure_sparse
     ! use mod_amgx,           only: calculate_pressure_amgx
@@ -21,6 +21,12 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     real(8), intent(in) :: aelem(:)
     real(8), intent(inout) :: FN(:,:)
     real(8), intent(inout) :: UN(:,:)
+
+    integer, intent(in) :: PTM(:,:)
+    real(8), intent(inout) :: PTP(:,:)
+    real(8), intent(in) :: PTB(:,:,:)
+    real(8), intent(in) :: ptaelem(:)
+    
 
     ! Parameters
     real(8), parameter :: PI = 3.141592653589793
@@ -61,6 +67,12 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     integer :: icilia
     type(festruct), allocatable :: cilium(:)
 
+    ! Particle information
+    real(8) :: px0, py0
+    integer :: nparticle
+    logical, allocatable:: pboundary(:,:)
+    type(festruct) :: particle
+
     !---------------------- Begin Calculations ------------------------------------!
 
     ! Read input data from file
@@ -73,6 +85,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     call write_mesh(M,'u')
     call write_mesh(M,'v')
     call write_mesh(M,'p')
+
+    ! Write FEM mesh
+    call write_field(real(MM,8),'F',1)
+    call write_field(real(PTM,8),'K',1)
 
     ! Allocate matrices ofr u,v,us,vs,rhs
     allocate(u(M%xu%lb:M%xu%ub,M%yu%lb:M%yu%ub))    
@@ -120,13 +136,22 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     write(*,'(2(A,I8),2(A,1p1e15.6))') "Nx = ",Nx, " Ny = ",Ny, &
     " Lx = ",Lx, " Ly = ",Ly
 
+    ! Define a particle
+    px0 = 0.8e-3
+    py0 = 1.4e-3
+    pboundary = boundary
+    pboundary = .FALSE.
+    PTP(:,1) = PTP(:,1) + px0 
+    PTP(:,2) = PTP(:,2) + py0 
+    particle = festruct(PTM,PTP,PTB,pboundary,ptaelem,FN,UN,co,kval)
+
     ! Define an festruct object before
     ! Initialize the festruct
-    ncilia = 4
+    ncilia = 8
     allocate(cilium(ncilia))
-    wc = 0.5e-3
+    wc = 0.1e-3
     x0 = 1e-3-wc/2.0d0
-    dc = 0.5e-3
+    dc = 0.2e-3
     PP(:,1) = PP(:,1) + x0
     cilium(1) = festruct(MM,PP,b,boundary,aelem,FN,UN,co,kval)
     do ic = 2,ncilia
@@ -156,11 +181,14 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         call apply_boundary_channel(M,u,v,utop,ubottom,uleft,uright,vtop,vbottom,vleft,vright)
     
         call cilium%calculate_forces()
+        ! print *, particle%FN
+        call particle%calculate_forces()
         Fx = 0.0d0 ! Initialize the forces at every time-step
         Fy = 0.0d0
         do icilia = 1,ncilia
             call spread_force(M,cilium(icilia),Fx,Fy)
         end do
+        call spread_force(M,particle,Fx,Fy)
 
 
         call cdu(M,u,v,us,nu,Fx)
@@ -183,12 +211,15 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
 
         ! Initialize velocity to zero and then Interpolate velocity
         call cilium%set_velocity(0.0d0)
+        call particle%set_velocity(0.0d0)
         do icilia = 1,ncilia
             call interpolate_velocity(M,cilium(icilia),umid,vmid)
         end do
+        call interpolate_velocity(M,particle,umid,vmid)
 
         ! Update structure
         call cilium%update_position(dt/2)
+        call particle%update_position(dt/2)
         
         ! call write_field(u,'u',it) 
         ! call write_field(v,'v',it) 
@@ -199,6 +230,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
        
         ! Calculate forces
         call cilium%calculate_forces()
+        call particle%calculate_forces()
         call apply_boundary_channel(M,umid,vmid,utop,ubottom,uleft,uright,vtop,vbottom,vleft,vright)
        
         ! print *, "Hi"
@@ -207,6 +239,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         do icilia = 1,ncilia
             call spread_force(M,cilium(icilia),Fx,Fy)
         end do
+        call spread_force(M,particle,Fx,Fy)
 
         call cdu(M,umid,vmid,us,nu,Fx)
         us = u + us*dt
@@ -229,12 +262,15 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     
         ! Initialize velocity to zero and then Interpolate velocity
         call cilium%set_velocity(0.0d0)
+        call particle%set_velocity(0.0d0)
         do icilia = 1,ncilia
             call interpolate_velocity(M,cilium(icilia),u,v)
         end do
+        call interpolate_velocity(M,particle,u,v)
 
         ! Update structure
         call cilium%update_position(dt)
+        call particle%update_position(dt)
 
         write(*,'(A,F10.5)') 'time = ', t
         
@@ -243,10 +279,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         ! if (mod(it,1).eq.0) then 
             call write_field(u,'u',it) 
             call write_field(v,'v',it) 
-            call write_field(real(MM,8),'F',it)
             do ic = 1,ncilia 
-                call write_field(cilium(ic)%P,'P',it)
+                call write_field(cilium(ic)%P,'C',it)
             end do
+            call write_field(particle%P,'P',it)
         end if
 
     end do

@@ -31,7 +31,11 @@ module fem2d
     elemental subroutine set_force(self,FN)
         class(festruct), intent(inout) :: self
         real(real64), intent(in) :: FN
-        self%FN = FN 
+        
+        integer(int32) :: ipoints
+        ! Fix the bottom nodes (Make force zero)
+        forall (ipoints = 1:size(self%P,1), self%boundary(ipoints,2).eqv..True.) &
+            self%FN(ipoints,:) = FN
     end subroutine set_force
     
     elemental subroutine set_velocity(self,UN)
@@ -40,7 +44,7 @@ module fem2d
         self%U = UN 
     end subroutine set_velocity
 
-    elemental subroutine calculate_forces(self)
+    elemental impure subroutine calculate_forces(self)
         class(festruct), intent(inout) :: self
         real(real64) :: D(size(self%M,1),2,2)
         real(real64) :: didx(size(self%M,1),2,3)
@@ -51,6 +55,7 @@ module fem2d
 
         nelem = size(self%M,1)
 
+        ! print *, "hi" 
         ! Calculate deformation gradient
         D = deformationgradient(self%M,self%P,self%b)
 

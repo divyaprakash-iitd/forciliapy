@@ -18,7 +18,9 @@ Ly = max(yv,[],'all');
 uFile = dir(strcat('u_0','*'));
 vFile = dir(strcat('v_0','*'));
 PFile = dir(strcat('P_0','*'));
+CFile = dir(strcat('C_0','*'));
 FFile = dir(strcat('F_0','*'));
+KFile = dir(strcat('K_0','*'));
 
 nFiles = length(uFile);
 u = load(uFile(nFiles).name);
@@ -66,10 +68,16 @@ for iFile = 1:nFiles
     title(uFile(iFile).name)
 
     %% Plot FEM mesh
+    C = load(CFile(iFile).name)';
+    M = load(FFile(1).name)';
+    for i = 1:2:size(C,2)
+        triplot(M,C(:,i),C(:,i+1),'k-','linewidth',2)
+    end
+
     P = load(PFile(iFile).name)';
-    M = load(FFile(iFile).name)';
+    M = load(KFile(1).name)';
     for i = 1:2:size(P,2)
-        triplot(M,P(:,i),P(:,i+1),'k-','linewidth',5)
+        triplot(M,P(:,i),P(:,i+1),'k-','linewidth',2)
     end
 %     pause(0.5)
     writeVideo(vid,getframe(gca));

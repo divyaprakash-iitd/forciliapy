@@ -2,6 +2,8 @@ rm u_0*
 rm v_0*
 rm F_0*
 rm P_0*
+rm C_0*
+rm K_0*
 #rm ib_loc*
 #rm force_ib_loc*
 #rm vel_ib_loc*
