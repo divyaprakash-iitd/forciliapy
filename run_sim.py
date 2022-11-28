@@ -7,8 +7,8 @@ import ibmc
 
 DL = 0.01
 DH = 0.002
-L = DH/2
-B = DL/10
+L = 1e-3
+B = 0.5e-3
 Nx = 4
 Ny = 10
 

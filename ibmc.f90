@@ -45,7 +45,7 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     real(8), allocatable :: u(:,:), v(:,:), us(:,:), vs(:,:), R(:,:), &
                                  P(:,:), A(:,:,:), Fx(:,:), Fy(:,:), umid(:,:), vmid(:,:)
     ! Temporary/Miscellaneous variable
-    integer  :: it, NN, il, ip, err
+    integer  :: it, NN, ic, err
     real(8)    :: tp  ! Time period
     ! Mesh
     type(mesh)      :: M
@@ -55,9 +55,11 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
     namelist /grid/ Nx, Ny, Lx, Ly
     namelist /flow/ nu, rho, utop, TP
     
-    integer :: ncilia = 2
+    ! Cilia information
+    real(8) :: x0, wc, dc 
+    integer :: ncilia
     integer :: icilia
-    type(festruct) :: cilium(2)
+    type(festruct), allocatable :: cilium(:)
 
     !---------------------- Begin Calculations ------------------------------------!
 
@@ -120,8 +122,17 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
 
     ! Define an festruct object before
     ! Initialize the festruct
-
-    cilium = festruct(MM,PP,b,boundary,aelem,FN,UN,co,kval)
+    ncilia = 4
+    allocate(cilium(ncilia))
+    wc = 0.5e-3
+    x0 = 1e-3-wc/2.0d0
+    dc = 0.5e-3
+    PP(:,1) = PP(:,1) + x0
+    cilium(1) = festruct(MM,PP,b,boundary,aelem,FN,UN,co,kval)
+    do ic = 2,ncilia
+        PP(:,1) = PP(:,1) + (wc+dc)
+        cilium(ic) = festruct(MM,PP,b,boundary,aelem,FN,UN,co,kval)
+    end do
 
     call apply_parabolic_initialization(M,u,uleft)
 
@@ -232,8 +243,10 @@ subroutine ibmc(MM,PP,b,boundary,co,kval,aelem,FN,UN)
         ! if (mod(it,1).eq.0) then 
             call write_field(u,'u',it) 
             call write_field(v,'v',it) 
-            call write_field(real(MM,8),'F',it) 
-            call write_field(cilium(1)%P,'P',it) 
+            call write_field(real(MM,8),'F',it)
+            do ic = 1,ncilia 
+                call write_field(cilium(ic)%P,'P',it)
+            end do
         end if
 
     end do

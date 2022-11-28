@@ -28,7 +28,7 @@ contains
         integer(int32) :: i, j, inp, LeftIndex, RightIndex, BottomIndex, TopIndex, StencilSize
 
         np = size(B%P,1)
-        print *, np
+        ! print *, np
         StencilSize = 4; ! Only on one side
 
         ! Calculate the x-direction force on the u-velocity cells

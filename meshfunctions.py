@@ -17,8 +17,8 @@ def rectanglecor(L, B, Nx, Ny):
     Returns:
         Delaunay object: The Delaunay triangulation object
     """
-    X = np.linspace(0.5e-3, 1.5e-3, Nx)
-    Y = np.linspace(0.3e-3, 1.5e-3, Ny)
+    X = np.linspace(0, B, Nx)
+    Y = np.linspace(0, L, Ny)
     X, Y = np.meshgrid(X, Y)
 
     X = X.reshape((X.size, -1))
@@ -88,7 +88,7 @@ def particlecor(radius, N):
 
     px = radius*np.cos(theta)
     py = radius*np.sin(theta)
-    ds = np.sqrt((px[0]-px[1])**2 + (py[0]-py[1])**2)
+    ds = np.linalg.norm([px[0]-px[1], py[0]-py[1]])
     boundary = np.vstack((px, py)).T
 
     # Create a background canvas

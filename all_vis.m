@@ -68,7 +68,9 @@ for iFile = 1:nFiles
     %% Plot FEM mesh
     P = load(PFile(iFile).name)';
     M = load(FFile(iFile).name)';
-    triplot(M,P(:,1),P(:,2),'k-','linewidth',5)
+    for i = 1:2:size(P,2)
+        triplot(M,P(:,i),P(:,i+1),'k-','linewidth',5)
+    end
 %     pause(0.5)
     writeVideo(vid,getframe(gca));
     if iFile ~= nFiles

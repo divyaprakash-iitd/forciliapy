@@ -20,7 +20,7 @@ contains
         write(itnumber,"(I8.8)") timestep
         filename = fieldname // '_' // itnumber // '.txt'
         
-        open(unit=fileunit, file=filename, ACTION="write", STATUS="replace")
+        open(unit=fileunit, file=filename, ACTION="write", STATUS="unknown", position="append")
         do j = 1,size(F,2)
             write(fileunit, '(*(F14.7))')( real(F(i,j)) , i = 1,size(F,1))
         end do
